@@ -97,10 +97,6 @@ apt-get update
 # 基本ツールのインストール
 apt-get install -y vim unzip git
 
-# Composerインストール
-curl -sS https://getcomposer.org/installer | php
-mv composer.phar /usr/local/bin/composer
-
 # タイムゾーン設定、-fオプションで既に存在するリンクと同名のファイルを削除
 ln -sf /usr/share/zoneinfo/${timezone} /etc/localtime
 
@@ -163,6 +159,10 @@ sed -i -e "s/^user =.*\$/user = preview/" \
     -e "s/^;\?listen\.owner.*\$/listen.owner = preview/" \
     -e "s/^;\?listen\.group.*\$/listen.group = preview/" \
     -e "s/^;\?listen\.mode.*\$/listen.mode = 0666/" /etc/php5/fpm/pool.d/preview.conf
+
+# Composerインストール
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
 
 # ルートページインストール
 rootSystemInstall
