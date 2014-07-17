@@ -66,9 +66,9 @@ authBridgeScript=''
 ######################## 設定終了 #############################
 
 # ユーザー作成
-sudo useradd --home-dir /home/home --create-home --user-group home
-sudo useradd --home-dir /home/codiad --create-home --user-group codiad
-sudo useradd --home-dir /hoem/preview --create-home --user-group preview
+useradd --home-dir /home/home --create-home --user-group home
+useradd --home-dir /home/codiad --create-home --user-group codiad
+useradd --home-dir /home/preview --create-home --user-group preview
 
 # ユーザーhomeへcodiadグループを追加する
 gpasswd -a home codiad
@@ -79,7 +79,7 @@ echo "- : codiad : ALL" >> /etc/security/access.conf
 echo "- : preview : ALL" >> /etc/security/access.conf
 
 # previewで作成したファイルをエディターで編集可能にする
-echo "umask 002" >> /home/proview/.profile
+echo "umask 002" >> /home/preview/.profile
 
 # 既存パッケージ更新
 apt-get update
@@ -95,7 +95,7 @@ apt-add-repository ppa:nginx/stable -y
 apt-get update
 
 # 基本ツールのインストール
-apt-get install -y vim silversearcher-ag unzip git
+apt-get install -y vim unzip git
 
 # Composerインストール
 curl -sS https://getcomposer.org/installer | php
@@ -126,7 +126,7 @@ sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
 apt-get install -y nginx php5-fpm
 
 # PHP-FPMオプション設定
-sed -i -e "s/error_reporting = .*/error_reporting = E_ALL" \
+sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
     -e "s/display_errors = .*/display_errors = On/" \
     -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" \
     -e "s/memory_limit = .*/memory_limit = 300M/" \
@@ -165,11 +165,9 @@ sed -i -e "s/^user =.*\$/user = preview/" \
     -e "s/^;\?listen\.mode.*\$/listen.mode = 0666/" /etc/php5/fpm/pool.d/preview.conf
 
 # ルートページインストール
-mkdir -p /home/home
 rootSystemInstall
 
 # Codiadホームにgidをセットし、新規ディレクトリー／ファイルのグループが変わらないようにする
-mkdir -p /home/codiad
 chown codiad:codiad /home/codiad
 chmod g+s /home/codiad
 
