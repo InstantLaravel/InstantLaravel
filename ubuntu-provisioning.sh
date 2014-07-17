@@ -150,7 +150,7 @@ sed -i -e "s/user = www-data/user = codiad/" \
     -e "s/^;\?listen\.owner.*\$/listen.owner = codiad/" \
     -e "s/^;\?listen\.group.*\$/listen.group = codiad/" \
     -e "s/^;\?listen\.mode.*\$/listen.mode = 0666/" /etc/php5/fpm/pool.d/codiad.conf
-# previewには、禁止function設定
+# previewには、禁止function設定、php.iniの値に追加される
 sed -i -e "s/^user =.*\$/user = preview/" \
     -e "s/^group =.*\$/group = preview/" \
     -e "s/\[www\]/[preview]/" \
@@ -207,6 +207,8 @@ sed -e "s+/path/to/codiad+/home/codiad+" \
        -e "s+domain\.tld+${editorDomain}+" \
        -e "s+America/Chicago+${timezone}+" /home/codiad/config.example.php > /home/codiad/config.php
 chown -R codiad:codiad /home/codiad
+chmod 775 /home/codiad/data
+chmod 775 /home/codiad/workspace
 
 # 学習対象プロジェクトインストール
 learningTargetInstall
@@ -292,7 +294,7 @@ server {
         listen 80;
         server_name ${previewDomain};
 
-        root /home/preview/workspace;
+        root /home/codiad/workspace;
 
         index index.html index.php;
 
