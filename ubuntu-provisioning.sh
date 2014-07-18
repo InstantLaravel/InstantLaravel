@@ -40,10 +40,10 @@ rootSystemInstall() {
     composer install
     cd
     # 新規ユーザー作成シェルの準備
-    sed -i -e "s/*** Base Domain Name ***/${previewDomain}/" \
-           -e "s/*** Doc Root ***/${previewDocRoot}/" /home/home/top/add-new/user.sh
-    chown root:home /home/home/top/add-new/user.sh
-    chmod 2754 /home/home/top/add-new/user.sh
+    sed -i -e "s/<<< Base Domain Name >>>/${previewDomain}/" \
+           -e "s/<<< Doc Root >>>/${previewDocRoot}/" /home/home/top/add-new-user.sh
+    chown root:home /home/home/top/add-new-user.sh
+    chmod 2754 /home/home/top/add-new-user.sh
 }
 
 
