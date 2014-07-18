@@ -23,9 +23,12 @@ timezone='Asia/Tokyo'
 basePassword='whitebase'
 
 # ルートページ（登録／ログイン等）インストール
-# /home/homeがインストール先
+# /home/home/topがインストール先
 rootSystemInstall() {
-    chown -R home:home /home/home
+    git clone https://github.com/InstantLaravel/TopPage.git /home/home/top
+    cd /home/home/top
+    composer install
+    cd
 }
 
 # ルートページドキュメントルート
@@ -33,6 +36,8 @@ rootPageDocRoot='public'
 
 # 学習対象PHPシステムインストール
 # /home/codiad/workspace/baseがインストール先
+# インストールした全ディレクトリー／ファイルは、所有オーナーbase、所属グループcodiadにし、
+# ディレクトリーは、gidのセットを上位ディレクトリーから継承している
 learningTargetInstall() {
     # 現在CodiadはUTF8のファイル保存時に正しく保存されないため英語オリジナル版をベースとして使用
     composer create-project laravel/laravel /home/codiad/workspace/base --prefer-dist
@@ -49,12 +54,6 @@ learningTargetInstall() {
     unzip bootstrap-3.2.0-dist.zip -d bootstrap
     mv bootstrap/bootstrap-3.2.0-dist/* /home/codiad/workspace/base/public
     rm -R bootstrap*
-
-    # インストール終了後、オーナーを変更
-    chown -R codiad:codiad /home/codiad
-
-    # storageディレクトリーを書き込み可能にする
-    chmod -R 757 /home/codiad/workspace/base/app/storage
 }
 
 # ルートページ（認証）とCodiad（エディター）の認証ブリッジスクリプトパス
@@ -68,18 +67,15 @@ authBridgeScript=''
 # ユーザー作成
 useradd --home-dir /home/home --create-home --user-group home
 useradd --home-dir /home/codiad --create-home --user-group codiad
-useradd --home-dir /home/preview --create-home --user-group preview
-
-# ユーザーhomeへcodiadグループを追加する
-gpasswd -a home codiad
+useradd --home-dir /home/base --create-home --user-group base
 
 # SSHログイン禁止
 echo "- : home : ALL" >> /etc/security/access.conf
 echo "- : codiad : ALL" >> /etc/security/access.conf
 echo "- : preview : ALL" >> /etc/security/access.conf
 
-# previewで作成したファイルをエディターで編集可能にする
-echo "umask 002" >> /home/preview/.profile
+# baseユーザーで作成したファイルをエディターで編集可能にする
+echo "umask 002" >> /home/base/.profile
 
 # 既存パッケージ更新
 apt-get update
@@ -165,7 +161,13 @@ curl -sS https://getcomposer.org/installer | php
 mv composer.phar /usr/local/bin/composer
 
 # ルートページインストール
+# インストール先は/home/home/top
 rootSystemInstall
+# インストール終了後、オーナーを変更
+chown -R home:codiad /home/home/top
+# codiadグループから書き込めるようにする
+find /home/home/top -type d -exec sudo chmod 2775 {} +
+find /home/home/top -type f -exec sudo chmod 0664 {} +
 
 # Codiadホームにgidをセットし、新規ディレクトリー／ファイルのグループが変わらないようにする
 chown codiad:codiad /home/codiad
@@ -211,7 +213,13 @@ chmod 775 /home/codiad/data
 chmod 775 /home/codiad/workspace
 
 # 学習対象プロジェクトインストール
+# インストール先は、/home/codiad/workspace/base
 learningTargetInstall
+# インストール終了後、オーナーを変更
+chown -R base:codiad /home/codiad/workspace/base
+# codiadグループから書き込めるようにする
+find /home/codiad/workspace/base -type d -exec sudo chmod 2775 {} +
+find /home/codiad/workspace/base -type f -exec sudo chmod 0664 {} +
 
 # Nginxデフォルト設定ファイルを書き換え
 cat <<EOT > /etc/nginx/sites-available/default
@@ -219,7 +227,7 @@ server {
         listen 80 ;
         server_name ${rootDomain};
 
-        root /home/home/${rootPageDocRoot};
+        root /home/home/top/${rootPageDocRoot};
 
         index index.php;
 
