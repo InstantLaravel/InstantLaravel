@@ -39,10 +39,12 @@ rootSystemInstall() {
     cd /home/home/top
     composer install
     cd
+    # 新規ユーザー作成シェルの準備
+    sed -i -e "s/*** Base Domain Name ***/${previewDomain}/" \
+           -e "s/*** Doc Root ***/${previewDocRoot}/" /home/home/top/add-new/user.sh
+    chown root:home /home/home/top/add-new/user.sh
+    chmod 2754 /home/home/top/add-new/user.sh
 }
-
-
-
 
 
 # 学習対象PHPシステムインストール
@@ -159,7 +161,7 @@ sed -i -e "s/user www-data;/user home;/" \
 
 
 # PHP-FPM設定
-echo <<EOT > /etc/php5/fpm/pool.d/home.conf
+cat <<EOT > /etc/php5/fpm/pool.d/home.conf
 [home]
 user = home
 group = home
@@ -174,7 +176,7 @@ pm.min_spare_servers = 1
 pm.max_spare_servers = 3
 chdir = /
 EOT
-echo <<EOT > /etc/php5/fpm/pool.d/codiad.conf
+cat <<EOT > /etc/php5/fpm/pool.d/codiad.conf
 [codiad]
 user = codiad
 group = codiad
@@ -189,7 +191,7 @@ pm.min_spare_servers = 1
 pm.max_spare_servers = 3
 chdir = /
 EOT
-echo <<EOT > /etc/php5/fpm/pool.d/base.conf
+cat <<EOT > /etc/php5/fpm/pool.d/base.conf
 [base]
 user = base
 group = base
