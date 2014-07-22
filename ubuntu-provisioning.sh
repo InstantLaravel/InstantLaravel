@@ -439,5 +439,5 @@ ln -s /etc/nginx/sites-available/preview /etc/nginx/sites-enabled
 # Nginx、php5-fpm再起動
 service nginx restart
 service php5-fpm stop
-service phpt-fpm start
+service php5-fpm start
 
