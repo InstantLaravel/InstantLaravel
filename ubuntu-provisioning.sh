@@ -36,21 +36,6 @@ basePassword='whitebase'
 # インストールした全ディレクトリー／ファイルは、所有オーナーbase、所属グループcodiadにし、
 # ディレクトリーは、gidのセットを上位ディレクトリーから継承している
 learningTargetInstall() {
-    # 現在CodiadはUTF8のファイル保存時に正しく保存されないため英語オリジナル版をベースとして使用
-    composer create-project laravel/laravel /home/codiad/workspace/base --prefer-dist
-
-    # 日本語言語ファイルのみ日本語翻訳版からコピー
-    wget https://github.com/laravel-ja/laravel/archive/master.zip
-    unzip master.zip
-    mv laravel-master/app/lang/ja /home/codiad/workspace/base/app/lang/ja
-    rm -R laravel-master
-    rm master.zip
-
-    # Bootstrapをpublicへセット
-    wget https://github.com/twbs/bootstrap/releases/download/v3.2.0/bootstrap-3.2.0-dist.zip
-    unzip bootstrap-3.2.0-dist.zip -d bootstrap
-    mv bootstrap/bootstrap-3.2.0-dist/* /home/codiad/workspace/base/public
-    rm -R bootstrap*
 }
 
 
@@ -204,14 +189,6 @@ composer install
 cd
 
 
-# 新規ユーザー作成シェルの準備
-#sed -i -e "s/<<< Base Domain Name >>>/${previewDomain}/" \
-#       -e "s/<<< Doc Root >>>/${previewDocRoot}/" /home/home/top/add-new-user.sh
-chown root:home /home/home/top/add-new-user.sh
-chmod u+x add-new-user.sh
-chmod 2754 /home/home/top/add-new-user.sh
-
-
 # インストール終了後、オーナーを変更
 chown -R home:codiad /home/home/top
 
@@ -219,6 +196,13 @@ chown -R home:codiad /home/home/top
 # codiadグループから書き込めるようにする
 find /home/home/top -type d -exec sudo chmod 2775 {} +
 find /home/home/top -type f -exec sudo chmod 0664 {} +
+
+
+# 新規ユーザー作成シェルの準備
+#sed -i -e "s/<<< Base Domain Name >>>/${previewDomain}/" \
+#       -e "s/<<< Doc Root >>>/${previewDocRoot}/" /home/home/top/add-new-user.sh
+chown root:home /home/home/top/add-new-user.sh
+chmod 2754 /home/home/top/add-new-user.sh
 
 
 # Codiadホームにgidをセットし、新規ディレクトリー／ファイルのグループが変わらないようにする
@@ -245,14 +229,11 @@ sed -i -e 's/"english",/"english",\n    "ja" => "日本語",/' /home/codiad/lang
 
 # Codiad初期設定
 echo "<?php/*|[\"\",{\"username\":\"base\",\"path\":\"base\",\"focused\":true}]|*/?>" > /home/codiad/data/active.php
-chmod 664 /home/codiad/data/active.php
 echo "<?php/*|[{\"name\":\"\u30a4\u30f3\u30b9\u30bf\u30f3\u30c8Laravel base\",\"path\":\"base\"}]|*/?>" > /home/codiad/data/projects.php
-chmod 664 /home/codiad/data/projects.php
 echo "<?php echo sha1(md5(\"${basePassword}\"));" > temp.php
 hashedPassword=`php -f temp.php`
 rm temp.php
 echo "<?php/*|[{\"username\":\"base\",\"password\":\"${hashedPassword}\",\"project\":\"base\"}]|*/?>" > /home/codiad/data/users.php
-chmod 664 /home/codiad/data/users.php
 if [ -n "${authBridgeScript}" ]
 then
     # ブリッジスクリプト登録
@@ -266,13 +247,31 @@ sed -e "s+/path/to/codiad+/home/codiad+" \
 
 
 chown -R codiad:codiad /home/codiad
+chown home:codiad /home/codiad/data
+chown home:codiad /home/codiad/data/*.php
 chmod 775 /home/codiad/data
 chmod 775 /home/codiad/workspace
+chmod 664 /home/codiad/data/*.php
+
 
 
 # 学習対象プロジェクトインストール
 # インストール先は、/home/codiad/workspace/base
-learningTargetInstall
+# 現在CodiadはUTF8のファイル保存時に正しく保存されないため英語オリジナル版をベースとして使用
+composer create-project laravel/laravel /home/codiad/workspace/base --prefer-dist
+
+# 日本語言語ファイルのみ日本語翻訳版からコピー
+wget https://github.com/laravel-ja/laravel/archive/master.zip
+unzip master.zip
+mv laravel-master/app/lang/ja /home/codiad/workspace/base/app/lang/ja
+rm -R laravel-master
+rm master.zip
+
+# Bootstrapをpublicへセット
+wget https://github.com/twbs/bootstrap/releases/download/v3.2.0/bootstrap-3.2.0-dist.zip
+unzip bootstrap-3.2.0-dist.zip -d bootstrap
+mv bootstrap/bootstrap-3.2.0-dist/* /home/codiad/workspace/base/public
+rm -R bootstrap*
 
 
 # インストール終了後、オーナーを変更
@@ -284,6 +283,7 @@ find /home/codiad/workspace/base -type d -exec sudo chmod 2775 {} +
 find /home/codiad/workspace/base -type f -exec sudo chmod 0664 {} +
 
 
+# Nginx 仮想ホスト設定
 # Nginx トップ（認証／ログイン）設定
 cat <<EOT > /etc/nginx/sites-available/default
 server {
