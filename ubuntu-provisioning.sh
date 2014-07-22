@@ -31,14 +31,6 @@ timezone='Asia/Tokyo'
 basePassword='whitebase'
 
 
-# 学習対象PHPシステムインストール
-# /home/codiad/workspace/baseがインストール先
-# インストールした全ディレクトリー／ファイルは、所有オーナーbase、所属グループcodiadにし、
-# ディレクトリーは、gidのセットを上位ディレクトリーから継承している
-learningTargetInstall() {
-}
-
-
 # ルートページ（認証）とCodiad（エディター）の認証ブリッジスクリプトパス
 # ルートページで認証せず、Codiadの認証を使用する場合は空白
 #  =>その場合は、Codiadで認証を行う
@@ -201,8 +193,7 @@ find /home/home/top -type f -exec sudo chmod 0664 {} +
 # 新規ユーザー作成シェルの準備
 #sed -i -e "s/<<< Base Domain Name >>>/${previewDomain}/" \
 #       -e "s/<<< Doc Root >>>/${previewDocRoot}/" /home/home/top/add-new-user.sh
-chown root:home /home/home/top/add-new-user.sh
-chmod 2754 /home/home/top/add-new-user.sh
+chmod 744 /home/home/top/add-new-user.sh
 
 
 # Codiadホームにgidをセットし、新規ディレクトリー／ファイルのグループが変わらないようにする
@@ -402,6 +393,14 @@ cat <<EOT > /home/codiad/workspace/index.html
 <h1>ユーザー名をＵＲＬの先頭に付けてください。</h1>
 <h3>例：</h3>
 <p>http://${editorDomain}/MyUser</p>
+<hr>
+<h3>利用の制限</h3>
+<h4>データベース</h4>
+<p>使用できるDBはSQLiteのみです。ドライバーに'sqlite'を指定してください。</p>
+<h4>禁止ファンクション</h4>
+<p>以下のファンクションは使用できません。<p>
+<h4>PHP拡張</h4>
+<p>チュートリアルで使用する拡張以外はインストールしていません。</p>
 EOT
 
 # 404ページ
