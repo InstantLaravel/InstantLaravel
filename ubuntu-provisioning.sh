@@ -8,9 +8,7 @@
 
 
 # プレビュードメイン名
-# プレビューを行う場合は、'user.domain.com'のように
-# ユーザー名をサブドメインにする
-previewDomain='instant.com'
+previewDomain='check.instant.com'
 # プレビュー用ドキュメントルート
 previewDocRoot='public'
 
@@ -19,6 +17,7 @@ previewDocRoot='public'
 rootDomain='top.instant.com'
 # ルートページドキュメントルート
 rootPageDocRoot='public'
+
 
 # エディター用(Codiad)ドメイン
 editorDomain="editor.instant.com"
@@ -30,21 +29,6 @@ timezone='Asia/Tokyo'
 
 # Codiad "base" ユーザーパスワード
 basePassword='whitebase'
-
-
-# ルートページ（登録／ログイン等）インストール
-# /home/home/topがインストール先
-rootSystemInstall() {
-    git clone https://github.com/InstantLaravel/TopPage.git /home/home/top
-    cd /home/home/top
-    composer install
-    cd
-    # 新規ユーザー作成シェルの準備
-    sed -i -e "s/<<< Base Domain Name >>>/${previewDomain}/" \
-           -e "s/<<< Doc Root >>>/${previewDocRoot}/" /home/home/top/add-new-user.sh
-    chown root:home /home/home/top/add-new-user.sh
-    chmod 2754 /home/home/top/add-new-user.sh
-}
 
 
 # 学習対象PHPシステムインストール
@@ -74,6 +58,7 @@ learningTargetInstall() {
 # ルートページで認証せず、Codiadの認証を使用する場合は空白
 #  =>その場合は、Codiadで認証を行う
 authBridgeScript=''
+
 
 
 ######################## 設定終了 #############################
@@ -130,10 +115,7 @@ apt-get install -y sqlite3
 apt-get install -y php5-cli php5-dev \
     php5-json php5-curl php5-sqlite\
     php5-imap php5-mcrypt
-
-
 php5enmod mcrypt pdo opcache json curl
-
 
 # PHPコマンドライン設定
 sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
@@ -157,7 +139,8 @@ sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
 
 # Nginxオプション設定
 sed -i -e "s/user www-data;/user home;/" \
-    -e "s/# server_names_hash_bucket_size.*/server_names_hash_bucket_size 64;/" /etc/nginx/nginx.conf
+    -e "s/^worker_processes .*/worker_processes auto;/" \
+    -e "s/# server_names_hash_bucket_size .*/server_names_hash_bucket_size 64;/" /etc/nginx/nginx.conf
 
 
 # PHP-FPM設定
@@ -168,7 +151,7 @@ group = home
 listen = /var/run/php5-fpm.home.sock
 listen.owner = home
 listen.group = home
-listen.mode = 0666
+listen.mode = 0660
 pm = dynamic
 pm.max_children = 5
 pm.start_servers = 2
@@ -183,7 +166,7 @@ group = codiad
 listen = /var/run/php5-fpm.codiad.sock
 listen.owner = codiad
 listen.group = codiad
-listen.mode = 0666
+listen.mode = 0660
 pm = dynamic
 pm.max_children = 5
 pm.start_servers = 2
@@ -198,7 +181,7 @@ group = base
 listen = /var/run/php5-fpm.base.sock
 listen.owner = base
 listen.group = base
-listen.mode = 0666
+listen.mode = 0660
 pm = dynamic
 pm.max_children = 5
 pm.start_servers = 2
@@ -215,7 +198,18 @@ mv composer.phar /usr/local/bin/composer
 
 # ルートページインストール
 # インストール先は/home/home/top
-rootSystemInstall
+git clone https://github.com/InstantLaravel/TopPage.git /home/home/top
+cd /home/home/top
+composer install
+cd
+
+
+# 新規ユーザー作成シェルの準備
+#sed -i -e "s/<<< Base Domain Name >>>/${previewDomain}/" \
+#       -e "s/<<< Doc Root >>>/${previewDocRoot}/" /home/home/top/add-new-user.sh
+chown root:home /home/home/top/add-new-user.sh
+chmod u+x add-new-user.sh
+chmod 2754 /home/home/top/add-new-user.sh
 
 
 # インストール終了後、オーナーを変更
@@ -290,128 +284,169 @@ find /home/codiad/workspace/base -type d -exec sudo chmod 2775 {} +
 find /home/codiad/workspace/base -type f -exec sudo chmod 0664 {} +
 
 
-# Nginxデフォルト設定ファイルを書き換え
+# Nginx トップ（認証／ログイン）設定
 cat <<EOT > /etc/nginx/sites-available/default
 server {
-        listen 80 ;
-        server_name ${rootDomain};
+    listen   80;
+    server_name www.${rootDomain};
+    rewrite ^(.*) http://${rootDomain}$1 permanent;
+}
 
-        root /home/home/top/${rootPageDocRoot};
+server {
+    listen 80 ;
+    server_name ${rootDomain};
 
-        index index.php;
+    root /home/home/top/${rootPageDocRoot};
 
-        location / {
-                try_files \$uri \$uri/ /index.php?\$query_string;
-                location ~ \\.php$ {
-                        include fastcgi_params;
-                        # SCRIPT_FILENAMEをオーバーライト
-                        fastcgi_param SCRIPT_FILENAME  \$document_root\$fastcgi_script_name;
-                        fastcgi_split_path_info ^(.+\\.php)(/.+)$;
-                        fastcgi_pass unix:/var/run/php5-fpm.home.sock;
-                        fastcgi_index index.php;
-                }
+    index index.php;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+        location ~ \\.php$ {
+            include fastcgi_params;
+            # SCRIPT_FILENAMEをオーバーライト
+            fastcgi_param SCRIPT_FILENAME  \$document_root\$fastcgi_script_name;
+            fastcgi_split_path_info ^(.+\\.php)(/.+)$;
+            fastcgi_pass unix:/var/run/php5-fpm.home.sock;
+            fastcgi_index index.php;
         }
+    }
 
-        location = favicon.ico { access_log off; log_not_found off; }
-        location = robots.txt { access_log off; log_not_found off; }
+    location = favicon.ico { access_log off; log_not_found off; }
+    location = robots.txt { access_log off; log_not_found off; }
 
-        access_log off;
-        error_log /var/log/nginx/error.log error;
-#       rewrite_log on;
+    access_log off;
+    error_log /var/log/nginx/error.log error;
+#    rewrite_log on;
 
-        error_page 404 /index.php;
+    error_page 404 /index.php;
 
-        sendfile off;
+    sendfile off;
 }
 EOT
 
 
+# Nginx エディター設定
 cat <<EOT > /etc/nginx/sites-available/editor
 server {
-        listen 80;
-        server_name ${editorDomain};
+    listen 80;
+    server_name ${editorDomain};
 
-        root /home/codiad;
+    root /home/codiad;
 
-        index index.php;
+    index index.php;
 
-        location / {
-                try_files \$uri \$uri/ /index.php?\$query_string;
-                location ~ \\.php$ {
-                        include fastcgi_params;
-                        # SCRIPT_FILENAMEをオーバーライト
-                        fastcgi_param SCRIPT_FILENAME  \$document_root\$fastcgi_script_name;
-                        fastcgi_split_path_info ^(.+\\.php)(/.+)$;
-                        fastcgi_pass unix:/var/run/php5-fpm.codiad.sock;
-                        fastcgi_index index.php;
-                }
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+        location ~ \\.php$ {
+            include fastcgi_params;
+            # SCRIPT_FILENAMEをオーバーライト
+            fastcgi_param SCRIPT_FILENAME  \$document_root\$fastcgi_script_name;
+            fastcgi_split_path_info ^(.+\\.php)(/.+)$;
+            fastcgi_pass unix:/var/run/php5-fpm.codiad.sock;
+            fastcgi_index index.php;
         }
+    }
 
-        location = favicon.ico { access_log off; log_not_found off; }
-        location = robots.txt { access_log off; log_not_found off; }
-
-        location ~ ^/workspace {
-            return 404;
-            break;
-        }
-
+    location ~ \\.(png|jpg|ico|css|js|font|txt)$ {
         access_log off;
-        error_log /var/log/nginx/error.log error;
-#       rewrite_log on;
+    }
 
-        error_page 404 /404.html;
-        error_page 500 502 503 504;
-        location = /50x.html {
-                root /usr/share/nginx/www;
-        }
+    # 直接codiaユーザーでアクセスさせると、workspace下の
+    # ファイルは全部変更できるため、拒否する。
+    location ~ ^/workspace {
+        return 403;
+    }
 
-        sendfile off;
+    access_log off;
+    error_log /var/log/nginx/error.log error;
+#    rewrite_log on;
+
+    error_page 404 /404.html;
+    error_page 500 502 503 504;
+    location = /50x.html {
+        root /usr/share/nginx/www;
+    }
+
+    sendfile off;
 }
 EOT
 
-
-cat <<EOT > /etc/nginx/sites-available/base
+# Nginx プレビュー設定
+cat <<EOT > /etc/nginx/sites-available/preview
 server {
-        listen 80;
-        server_name base.${previewDomain};
+    listen 80;
+    server_name ${previewDomain};
 
-        root /home/codiad/workspace/base/${previewDocRoot};
+    root /home/codiad/workspace/;
 
-        index index.html index.php;
+    index index.html index.php;
 
-        location ~ / {
-                try_files \$uri \$uri/ /index.php?\$query_string;
-                location ~ \\.php$ {
-                        include fastcgi_params;
-                        # SCRIPT_FILENAMEをオーバーライト
-                        fastcgi_param SCRIPT_FILENAME  \$document_root\$fastcgi_script_name;
-                        fastcgi_split_path_info ^(.+\\.php)(/.+)$;
-                        fastcgi_pass unix:/var/run/php5-fpm.base.sock;
-                        fastcgi_index index.php;
-                }
-        }
+    location / {
+        try_files \$uri \$uri/ index.php?\$query_string;
+    }
 
-        location = favicon.ico { access_log off; log_not_found off; }
-        location = robots.txt { access_log off; log_not_found off; }
+    # このドメインのトップレベルではPHPを実行させない
+    # そのため、fastcgiへのブリッジ処理は記述しない
 
+    # 末尾のスラッシュ除去
+    rewrite ^/(.+)/$ /\$1;
+
+    location ~ \\.(png|jpg|ico|css|js|font|txt)$ {
         access_log off;
-        error_log /var/log/nginx/error.log error;
-#       rewrite_log on;
+    }
 
-        error_page 404 /index.php;
+    include /etc/nginx/users.d/*;
 
-        sendfile off;
+    error_log /var/log/nginx/error.log error;
+#   rewrite_log on;
+
+    error_page 404 /404.html;
+
+    sendfile off;
 }
 EOT
 
+# indexページ
+cat <<EOT > /home/codiad/workspace/index.html
+<h1>ユーザー名をＵＲＬの先頭に付けてください。</h1>
+<h3>例：</h3>
+<p>http://${editorDomain}/MyUser</p>
+EOT
+
+# 404ページ
+cat <<EOT > /home/codiad/workspace/404.html
+<h1>ページが見つかりません。</h1>
+EOT
+
+# 各ユーザー用の設定フォルダーを作成する
+mkdir /etc/nginx/users.d
+
+# baseユーザー用設定ファイル
+cat <<EOT > /etc/nginx/users.d/base
+    location ~ ^/base(/(.+))?$ {
+        root /home/codiad/workspace/base/public;
+
+        try_files \$1 /base/index.php?\$query_string;
+
+        location ~ ^/base/index.php$ {
+            include fastcgi_params;
+            # パラメーターをオーバーライト
+            fastcgi_param SCRIPT_FILENAME /home/codiad/workspace/base/public/index.php;
+            fastcgi_split_path_info ^(.+\\.php)(.+)$;
+            fastcgi_pass unix:/var/run/php5-fpm.base.sock;
+            fastcgi_index index.php;
+        }
+    }
+EOT
 
 # 仮想ホストを有効にする
 ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled
 ln -s /etc/nginx/sites-available/editor /etc/nginx/sites-enabled
-ln -s /etc/nginx/sites-available/base /etc/nginx/sites-enabled
+ln -s /etc/nginx/sites-available/preview /etc/nginx/sites-enabled
 
 
 # Nginx、php5-fpm再起動
 service nginx restart
-service php5-fpm restart
+service php5-fpm start
 
