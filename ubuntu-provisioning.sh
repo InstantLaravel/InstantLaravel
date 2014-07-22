@@ -194,6 +194,7 @@ find /home/home/top -type f -exec sudo chmod 0664 {} +
 #sed -i -e "s/<<< Base Domain Name >>>/${previewDomain}/" \
 #       -e "s/<<< Doc Root >>>/${previewDocRoot}/" /home/home/top/add-new-user.sh
 chmod 744 /home/home/top/add-new-user.sh
+echo "home ALL=(ALL) NOPASSWD: /home/home/top/add-new-user.sh" >> /etc/sudoers
 
 
 # Codiadホームにgidをセットし、新規ディレクトリー／ファイルのグループが変わらないようにする
