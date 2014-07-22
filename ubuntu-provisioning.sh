@@ -138,7 +138,7 @@ sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
 
 
 # Nginxオプション設定
-sed -i -e "s/user www-data;/user home;/" \
+sed -i -e "s/user www-data;/user www-data;/" \
     -e "s/^worker_processes .*/worker_processes auto;/" \
     -e "s/# server_names_hash_bucket_size .*/server_names_hash_bucket_size 64;/" /etc/nginx/nginx.conf
 
@@ -150,7 +150,7 @@ user = home
 group = home
 listen = /var/run/php5-fpm.home.sock
 listen.owner = home
-listen.group = home
+listen.group = www-data
 listen.mode = 0660
 pm = dynamic
 pm.max_children = 5
@@ -165,7 +165,7 @@ user = codiad
 group = codiad
 listen = /var/run/php5-fpm.codiad.sock
 listen.owner = codiad
-listen.group = codiad
+listen.group = www-data
 listen.mode = 0660
 pm = dynamic
 pm.max_children = 5
@@ -180,7 +180,7 @@ user = base
 group = base
 listen = /var/run/php5-fpm.base.sock
 listen.owner = base
-listen.group = base
+listen.group = www-data
 listen.mode = 0660
 pm = dynamic
 pm.max_children = 5
@@ -319,8 +319,6 @@ server {
     error_log /var/log/nginx/error.log error;
 #    rewrite_log on;
 
-    error_page 404 /index.php;
-
     sendfile off;
 }
 EOT
@@ -362,12 +360,6 @@ server {
     error_log /var/log/nginx/error.log error;
 #    rewrite_log on;
 
-    error_page 404 /404.html;
-    error_page 500 502 503 504;
-    location = /50x.html {
-        root /usr/share/nginx/www;
-    }
-
     sendfile off;
 }
 EOT
@@ -400,8 +392,6 @@ server {
 
     error_log /var/log/nginx/error.log error;
 #   rewrite_log on;
-
-    error_page 404 /404.html;
 
     sendfile off;
 }
@@ -448,5 +438,6 @@ ln -s /etc/nginx/sites-available/preview /etc/nginx/sites-enabled
 
 # Nginx、php5-fpm再起動
 service nginx restart
-service php5-fpm start
+service php5-fpm stop
+service phpt-fpm start
 
