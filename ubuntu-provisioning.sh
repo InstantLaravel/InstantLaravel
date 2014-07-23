@@ -279,13 +279,7 @@ find /home/codiad/workspace/base -type f -exec sudo chmod 0664 {} +
 # Nginx トップ（認証／ログイン）設定
 cat <<EOT > /etc/nginx/sites-available/default
 server {
-    listen   80;
-    server_name www.${rootDomain};
-    rewrite ^(.*) http://${rootDomain}$1 permanent;
-}
-
-server {
-    listen 80 ;
+    listen 80 default_server;
     server_name ${rootDomain};
 
     root /home/home/top/${rootPageDocRoot};
@@ -364,10 +358,8 @@ server {
 
     root /home/codiad/workspace/;
 
-    index index.html index.php;
-
     location / {
-        try_files \$uri \$uri/ index.php?\$query_string;
+        try_files \$uri index.php?\$query_string;
     }
 
     # このドメインのトップレベルではPHPを実行させない
