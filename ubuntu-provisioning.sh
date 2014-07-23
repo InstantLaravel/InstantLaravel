@@ -106,7 +106,7 @@ sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
 apt-get install -y nginx php5-fpm
 
 
-# PHP-FPMオプション設定
+# PHP-FPM PHPオプション設定
 sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
     -e "s/display_errors = .*/display_errors = On/" \
     -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" \
@@ -191,10 +191,9 @@ find /home/home/top -type f -exec sudo chmod 0664 {} +
 
 
 # 新規ユーザー作成シェルの準備
-#sed -i -e "s/<<< Base Domain Name >>>/${previewDomain}/" \
-#       -e "s/<<< Doc Root >>>/${previewDocRoot}/" /home/home/top/add-new-user.sh
 chmod 744 /home/home/top/add-new-user.sh
 echo "home ALL=(ALL) NOPASSWD: /home/home/top/add-new-user.sh" > /etc/sudoers.d/home
+echo "home ALL=(ALL) NOPASSWD: /usr/sbin/service" >> /etc/sudoers.d/home
 echo 'Defaults:home !requiretty' >> /etc/sudoers.d/home
 
 
