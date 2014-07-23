@@ -441,3 +441,13 @@ service nginx restart
 service php5-fpm stop
 service php5-fpm start
 
+
+# Nginx、php5-fpm再起動要求監視シェル起動
+chown root:root /home/home/top/restart-watchdoc.sh
+chmod 744 /home/home/top/restart-watchdoc.sh
+/home/home/top/restart-watchdoc.sh &
+
+
+# 再起動時にも動作するように登録
+sed -i -e "s@^exit 0\$@/home/home/top/restart-watchdoc.sh \&> /dev/null\ \&\nexit 0@" /etc/rc.local
+chmod 744 /etc/rc.local
