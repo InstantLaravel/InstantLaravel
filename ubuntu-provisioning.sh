@@ -7,12 +7,6 @@
 ######################## 設定項目 #############################
 
 
-# プレビュードメイン名
-previewDomain='check.instant.com'
-# プレビュー用ドキュメントルート
-previewDocRoot='public'
-
-
 # ルートページ（登録／ログインなど）ドメイン
 rootDomain='top.instant.com'
 # ルートページドキュメントルート
@@ -22,6 +16,11 @@ rootPageDocRoot='public'
 # エディター用(Codiad)ドメイン
 editorDomain="editor.instant.com"
 
+
+# プレビュードメイン名
+previewDomain='check.instant.com'
+# プレビュー用ドキュメントルート
+previewDocRoot='public'
 
 # タイムゾーン
 timezone='Asia/Tokyo'
@@ -181,6 +180,18 @@ composer install
 cd
 
 
+# ルートロジック変更
+routeName=`tr -cd '[:alnum:]' < /dev/urandom | fold -w40 | head -n1`
+apiToken=`tr -cd '[:alnum:]' < /dev/urandom | fold -w40 | head -n1`
+sed -i -e "s/\*\*\* EDITOR DOMAIN \*\*\*/${editorDomain}/" \
+       -e "s/\*\*\* API ROUTE FOR USER NAME \*\*\*/api${routeName}/" \
+       -e "s/\*\*\* TOKEN FOR USER NAME \*\*\*/${apiToken}/" /home/home/top/app/routes.php
+
+
+# クッキードメイン変更
+sed -i -e "s/\*\*\* SESSION COOKIE NAME \*\*\*/${rootCokieDomain}/" /home/home/app/config/session.php
+
+
 # インストール終了後、オーナーを変更
 chown -R home:codiad /home/home/top
 
@@ -318,10 +329,8 @@ server {
 
     root /home/codiad;
 
-    index index.php;
-
     location / {
-        try_files \$uri \$uri/ /index.php?\$query_string;
+        try_files \$uri /index.php?\$query_string;
         location ~ \\.php$ {
             include fastcgi_params;
             # SCRIPT_FILENAMEをオーバーライト
@@ -356,10 +365,10 @@ server {
     listen 80;
     server_name ${previewDomain};
 
-    root /home/codiad/workspace/;
+    root /home/codiad/workspace;
 
     location / {
-        try_files \$uri index.php?\$query_string;
+        try_files \$uri /index.html;
     }
 
     # このドメインのトップレベルではPHPを実行させない
@@ -381,9 +390,9 @@ server {
 }
 EOT
 
-# indexページ
+# プレビューindexページ
 cat <<EOT > /home/codiad/workspace/index.html
-<h1>ユーザー名をＵＲＬの先頭に付けてください。</h1>
+<h1>ユーザー名をＵＲIの先頭に付けてください。</h1>
 <h3>例：</h3>
 <p>http://${editorDomain}/MyUser</p>
 <hr>
@@ -396,7 +405,7 @@ cat <<EOT > /home/codiad/workspace/index.html
 <p>チュートリアルで使用する拡張以外はインストールしていません。</p>
 EOT
 
-# 404ページ
+# プレビュー404ページ
 cat <<EOT > /home/codiad/workspace/404.html
 <h1>ページが見つかりません。</h1>
 EOT
