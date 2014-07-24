@@ -33,7 +33,7 @@ basePassword='whitebase'
 # ルートページ（認証）とCodiad（エディター）の認証ブリッジスクリプトパス
 # ルートページで認証せず、Codiadの認証を使用する場合は空白
 #  =>その場合は、Codiadで認証を行う
-authBridgeScript=''
+authBridgeScript='/home/codiad/auth-bridge.php'
 
 
 
@@ -257,7 +257,7 @@ chmod 664 /home/codiad/data/*.php
 # 学習対象プロジェクトインストール
 # インストール先は、/home/codiad/workspace/base
 # 現在CodiadはUTF8のファイル保存時に正しく保存されないため英語オリジナル版をベースとして使用
-composer create-project laravel/laravel /home/codiad/workspace/base --prefer-dist
+composer create-project laravel/laravel /home/codiad/workspace/base
 
 # 日本語言語ファイルのみ日本語翻訳版からコピー
 wget https://github.com/laravel-ja/laravel/archive/master.zip
@@ -409,6 +409,15 @@ EOT
 
 # baseへレイアウトのサンプルを用意
 mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/views/
+
+
+# ルートページとエディター間の認証ブリッジスクリプトを設置
+if [ -n "${authBridgeScript}" ]
+then
+    sed -e "s/\*\*\* ROOT DOMAIN \*\*\*/${rootDomain}/" \
+        -e "s/\*\*\* API ROUTE FOR USER NAME \*\*\*/${routeName}/" \
+        -e "s/\*\*\* TOKEN FOR USER NAME \*\*\*/${apiToken}/" /home/home/top/editor-resources/auth-bridge.php > ${authBridgeScript}
+fi
 
 
 # 仮想ホストを有効にする
