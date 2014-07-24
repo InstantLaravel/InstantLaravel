@@ -188,10 +188,6 @@ sed -i -e "s/\*\*\* EDITOR DOMAIN \*\*\*/${editorDomain}/" \
        -e "s/\*\*\* TOKEN FOR USER NAME \*\*\*/${apiToken}/" /home/home/top/app/routes.php
 
 
-# クッキードメイン変更
-sed -i -e "s/\*\*\* SESSION COOKIE NAME \*\*\*/${rootCokieDomain}/" /home/home/app/config/session.php
-
-
 # インストール終了後、オーナーを変更
 chown -R home:codiad /home/home/top
 
@@ -312,7 +308,6 @@ server {
     location = favicon.ico { access_log off; log_not_found off; }
     location = robots.txt { access_log off; log_not_found off; }
 
-    access_log off;
     error_log /var/log/nginx/error.log error;
 #    rewrite_log on;
 
@@ -341,17 +336,12 @@ server {
         }
     }
 
-    location ~ \\.(png|jpg|ico|css|js|font|txt)$ {
-        access_log off;
-    }
-
     # 直接codiaユーザーでアクセスさせると、workspace下の
     # ファイルは全部変更できるため、拒否する。
     location ~ ^/workspace {
         return 403;
     }
 
-    access_log off;
     error_log /var/log/nginx/error.log error;
 #    rewrite_log on;
 
@@ -377,10 +367,6 @@ server {
     # 末尾のスラッシュ除去
     rewrite ^/(.+)/$ /\$1;
 
-    location ~ \\.(png|jpg|ico|css|js|font|txt)$ {
-        access_log off;
-    }
-
     include /etc/nginx/users.d/*;
 
     error_log /var/log/nginx/error.log error;
@@ -391,27 +377,16 @@ server {
 EOT
 
 # プレビューindexページ
-cat <<EOT > /home/codiad/workspace/index.html
-<h1>ユーザー名をＵＲIの先頭に付けてください。</h1>
-<h3>例：</h3>
-<p>http://${editorDomain}/MyUser</p>
-<hr>
-<h3>利用の制限</h3>
-<h4>データベース</h4>
-<p>使用できるDBはSQLiteのみです。ドライバーに'sqlite'を指定してください。</p>
-<h4>禁止ファンクション</h4>
-<p>以下のファンクションは使用できません。<p>
-<h4>PHP拡張</h4>
-<p>チュートリアルで使用する拡張以外はインストールしていません。</p>
-EOT
+sed -e "s/\*\*\* EDITOR DOMAIN \*\*\*/${editorDomain}/" /home/home/top/preview-resources/index.html > /home/codiad/workspace/index.html
+
 
 # プレビュー404ページ
-cat <<EOT > /home/codiad/workspace/404.html
-<h1>ページが見つかりません。</h1>
-EOT
+mv /home/home/top/preview-resources/404.html /home/codiad/workspace/
+
 
 # 各ユーザー用の設定フォルダーを作成する
 mkdir /etc/nginx/users.d
+
 
 # baseユーザー用設定ファイル
 cat <<EOT > /etc/nginx/users.d/base
@@ -431,6 +406,12 @@ cat <<EOT > /etc/nginx/users.d/base
     }
 EOT
 
+
+# baseへレイアウトのサンプルを用意
+mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/views/
+
+
+
 # 仮想ホストを有効にする
 ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled
 ln -s /etc/nginx/sites-available/editor /etc/nginx/sites-enabled
@@ -449,6 +430,6 @@ chmod 744 /home/home/top/restart-watchdoc.sh
 /home/home/top/restart-watchdoc.sh &
 
 
-# 再起動時にも動作するように登録
+# 再起動時にも動作するようにrc.localへ登録
 sed -i -e "s@^exit 0\$@/home/home/top/restart-watchdoc.sh \&> /dev/null\ \&\nexit 0@" /etc/rc.local
 chmod 744 /etc/rc.local
