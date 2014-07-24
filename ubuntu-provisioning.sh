@@ -30,12 +30,6 @@ timezone='Asia/Tokyo'
 basePassword='whitebase'
 
 
-# ルートページ（認証）とCodiad（エディター）の認証ブリッジスクリプトパス
-# ルートページで認証せず、Codiadの認証を使用する場合は空白
-#  =>その場合は、Codiadで認証を行う
-authBridgeScript='/home/codiad/auth-bridge.php'
-
-
 
 ######################## 設定終了 #############################
 
@@ -180,14 +174,6 @@ composer install
 cd
 
 
-# ルートロジック変更
-routeName=`tr -cd '[:alnum:]' < /dev/urandom | fold -w40 | head -n1`
-apiToken=`tr -cd '[:alnum:]' < /dev/urandom | fold -w40 | head -n1`
-sed -i -e "s/\*\*\* EDITOR DOMAIN \*\*\*/${editorDomain}/" \
-       -e "s/\*\*\* API ROUTE FOR USER NAME \*\*\*/api${routeName}/" \
-       -e "s/\*\*\* TOKEN FOR USER NAME \*\*\*/${apiToken}/" /home/home/top/app/routes.php
-
-
 # インストール終了後、オーナーを変更
 chown -R home:codiad /home/home/top
 
@@ -233,13 +219,6 @@ echo "<?php echo sha1(md5(\"${basePassword}\"));" > temp.php
 hashedPassword=`php -f temp.php`
 rm temp.php
 echo "<?php/*|[{\"username\":\"base\",\"password\":\"${hashedPassword}\",\"project\":\"base\"}]|*/?>" > /home/codiad/data/users.php
-if [ -n "${authBridgeScript}" ]
-then
-    # ブリッジスクリプト登録
-    sed -i -e "s+//define(\"AUTH_PATH\", \"\");+define(\"AUTH_PATH\", \"${authBridgeScript}\");+" /home/codiad/config.example.php
-    # 非認証時はホームへリダイレクト
-    sed -i -e "s+// Login form+// 未認証時はルート（認証）ページヘ移動\n    header(\"Location: http://${rootDomain}\"); die();+" /home/codiad/index.php
-fi
 sed -e "s+/path/to/codiad+/home/codiad+" \
        -e "s+domain\.tld+${editorDomain}+" \
        -e "s+America/Chicago+${timezone}+" /home/codiad/config.example.php > /home/codiad/config.php
@@ -409,15 +388,6 @@ EOT
 
 # baseへレイアウトのサンプルを用意
 mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/views/
-
-
-# ルートページとエディター間の認証ブリッジスクリプトを設置
-if [ -n "${authBridgeScript}" ]
-then
-    sed -e "s/\*\*\* ROOT DOMAIN \*\*\*/${rootDomain}/" \
-        -e "s/\*\*\* API ROUTE FOR USER NAME \*\*\*/${routeName}/" \
-        -e "s/\*\*\* TOKEN FOR USER NAME \*\*\*/${apiToken}/" /home/home/top/editor-resources/auth-bridge.php > ${authBridgeScript}
-fi
 
 
 # 仮想ホストを有効にする
