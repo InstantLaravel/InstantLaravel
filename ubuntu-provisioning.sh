@@ -4,7 +4,9 @@
 # シェルから流す場合は、ルートユーザーになること!!!!
 
 
+
 ######################## 設定項目 #############################
+
 
 
 # ルートページ（登録／ログインなど）ドメイン
@@ -35,6 +37,10 @@ basePassword='whitebase'
 
 
 
+#######################
+# ユーザー関係・基本設定 #
+#######################
+
 # ユーザー作成
 useradd --home-dir /home/home --create-home --user-group home
 useradd --home-dir /home/codiad --create-home --user-group codiad
@@ -50,6 +56,15 @@ echo "- : base : ALL" >> /etc/security/access.conf
 # homeとbaseユーザーで作成したファイルをエディターで編集可能にする
 echo "umask 002" >> /home/base/.profile
 echo "umask 002" >> /home/home/.profile
+
+
+# タイムゾーン設定、-fオプションで既に存在するリンクと同名のファイルを削除
+ln -sf /usr/share/zoneinfo/${timezone} /etc/localtime
+
+
+#############
+# パッケージ #
+#############
 
 # 既存パッケージ更新
 apt-get update
@@ -72,13 +87,14 @@ apt-get update
 apt-get install -y vim unzip git
 
 
-# タイムゾーン設定、-fオプションで既に存在するリンクと同名のファイルを削除
-ln -sf /usr/share/zoneinfo/${timezone} /etc/localtime
-
-
 # SQLiteインストール
 # シンプルにするためするため、DBはSQLiteのみ
 apt-get install -y sqlite3
+
+
+##################
+# PHP、Nginx設定 #
+##################
 
 
 # PHP関係のインストール
@@ -86,6 +102,7 @@ apt-get install -y php5-cli php5-dev \
     php5-json php5-curl php5-sqlite\
     php5-imap php5-mcrypt
 php5enmod mcrypt pdo opcache json curl
+
 
 # PHPコマンドライン設定
 sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
@@ -161,108 +178,8 @@ chdir = /
 php_admin_value[disable_functions] = dl,exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source
 EOT
 
-# Composerインストール
-curl -sS https://getcomposer.org/installer | php
-mv composer.phar /usr/local/bin/composer
 
-
-# ルートページインストール
-# インストール先は/home/home/top
-git clone https://github.com/InstantLaravel/TopPage.git /home/home/top
-cd /home/home/top
-composer install
-cd
-
-
-# インストール終了後、オーナーを変更
-chown -R home:codiad /home/home/top
-
-
-# codiadグループから書き込めるようにする
-find /home/home/top -type d -exec sudo chmod 2775 {} +
-find /home/home/top -type f -exec sudo chmod 0664 {} +
-
-
-# 新規ユーザー作成シェルの準備
-chmod 744 /home/home/top/add-new-user.sh
-echo "home ALL=(ALL) NOPASSWD: /home/home/top/add-new-user.sh" > /etc/sudoers.d/home
-echo "home ALL=(ALL) NOPASSWD: /usr/sbin/service" >> /etc/sudoers.d/home
-echo 'Defaults:home !requiretty' >> /etc/sudoers.d/home
-
-
-# Codiadホームにgidをセットし、新規ディレクトリー／ファイルのグループが変わらないようにする
-chown codiad:codiad /home/codiad
-chmod g+s /home/codiad
-
-
-# Codiadインストール
-# wget https://github.com/Codiad/Codiad/archive/v.2.2.8.zip
-wget https://github.com/Codiad/Codiad/archive/master.zip
-mkdir temp
-unzip master.zip -d temp
-cp -R temp/Codiad-master/* /home/codiad
-rm master.zip
-rm -R temp
-
-
-# Codiad日本語化ファイルのインストール
-git clone https://gist.github.com/b55af329ac844c985bf3.git temp
-mv temp/ja.php /home/codiad/languages
-rm -R temp
-sed -i -e 's/"english",/"english",\n    "ja" => "日本語",/' /home/codiad/languages/code.php
-
-
-# Codiad初期設定
-echo "<?php/*|[\"\",{\"username\":\"base\",\"path\":\"base\",\"focused\":true}]|*/?>" > /home/codiad/data/active.php
-echo "<?php/*|[{\"name\":\"\u30a4\u30f3\u30b9\u30bf\u30f3\u30c8Laravel base\",\"path\":\"base\"}]|*/?>" > /home/codiad/data/projects.php
-echo "<?php echo sha1(md5(\"${basePassword}\"));" > temp.php
-hashedPassword=`php -f temp.php`
-rm temp.php
-echo "<?php/*|[{\"username\":\"base\",\"password\":\"${hashedPassword}\",\"project\":\"base\"}]|*/?>" > /home/codiad/data/users.php
-sed -e "s+/path/to/codiad+/home/codiad+" \
-       -e "s+domain\.tld+${editorDomain}+" \
-       -e "s+America/Chicago+${timezone}+" /home/codiad/config.example.php > /home/codiad/config.php
-
-
-chown -R codiad:codiad /home/codiad
-chown home:codiad /home/codiad/data
-chown home:codiad /home/codiad/data/*.php
-chmod 775 /home/codiad/data
-chmod 775 /home/codiad/workspace
-chmod 664 /home/codiad/data/*.php
-
-
-
-# 学習対象プロジェクトインストール
-# インストール先は、/home/codiad/workspace/base
-# 現在CodiadはUTF8のファイル保存時に正しく保存されないため英語オリジナル版をベースとして使用
-composer create-project laravel/laravel /home/codiad/workspace/base
-
-# 日本語言語ファイルのみ日本語翻訳版からコピー
-wget https://github.com/laravel-ja/laravel/archive/master.zip
-unzip master.zip
-mv laravel-master/app/lang/ja /home/codiad/workspace/base/app/lang/ja
-rm -R laravel-master
-rm master.zip
-
-# Bootstrapをpublicへセット
-wget https://github.com/twbs/bootstrap/releases/download/v3.2.0/bootstrap-3.2.0-dist.zip
-unzip bootstrap-3.2.0-dist.zip -d bootstrap
-mv bootstrap/bootstrap-3.2.0-dist/* /home/codiad/workspace/base/public
-rm -R bootstrap*
-
-
-# インストール終了後、オーナーを変更
-chown -R base:codiad /home/codiad/workspace/base
-
-
-# codiadグループから書き込めるようにする
-find /home/codiad/workspace/base -type d -exec sudo chmod 2775 {} +
-find /home/codiad/workspace/base -type f -exec sudo chmod 0664 {} +
-
-
-# Nginx 仮想ホスト設定
-# Nginx トップ（認証／ログイン）設定
+# トップ（認証／ログイン）仮想ホスト設定
 cat <<EOT > /etc/nginx/sites-available/default
 server {
     listen 80 default_server;
@@ -295,7 +212,7 @@ server {
 EOT
 
 
-# Nginx エディター設定
+# エディター仮想ホスト設定
 cat <<EOT > /etc/nginx/sites-available/editor
 server {
     listen 80;
@@ -328,7 +245,7 @@ server {
 }
 EOT
 
-# Nginx プレビュー設定
+# プレビュー仮想ホスト設定
 cat <<EOT > /etc/nginx/sites-available/preview
 server {
     listen 80;
@@ -355,12 +272,11 @@ server {
 }
 EOT
 
-# プレビューindexページ
-sed -e "s/\*\*\* PREVIEW DOMAIN \*\*\*/${previewDomain}/" /home/home/top/preview-resources/index.html > /home/codiad/workspace/index.html
 
-
-# プレビュー404ページ
-mv /home/home/top/preview-resources/404.html /home/codiad/workspace/
+# 仮想ホストを有効にする
+ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled
+ln -s /etc/nginx/sites-available/editor /etc/nginx/sites-enabled
+ln -s /etc/nginx/sites-available/preview /etc/nginx/sites-enabled
 
 
 # 各ユーザー用の設定フォルダーを作成する
@@ -386,23 +302,159 @@ cat <<EOT > /etc/nginx/users.d/base
 EOT
 
 
+###############
+# ルートページ #
+###############
+
+
+# Composerインストール
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
+
+
+# ルートページインストール
+# インストール先は/home/home/top
+git clone https://github.com/InstantLaravel/TopPage.git /home/home/top
+cd /home/home/top
+composer install
+cd
+
+
+# インストール終了後、オーナーを変更
+chown -R home:codiad /home/home/top
+
+
+# codiadグループから書き込めるようにする
+find /home/home/top -type d -exec chmod 2775 {} +
+find /home/home/top -type f -exec chmod 0664 {} +
+
+
+# 新規ユーザー作成シェルをsuduで実行するための準備
+chmod 744 /home/home/top/add-new-user.sh
+echo "home ALL=(ALL) NOPASSWD: /home/home/top/add-new-user.sh" > /etc/sudoers.d/home
+echo "home ALL=(ALL) NOPASSWD: /usr/sbin/service" >> /etc/sudoers.d/home
+echo 'Defaults:home !requiretty' >> /etc/sudoers.d/home
+
+
+# ルートロジック中のリダイレクト先設定
+
+sed -i -e "s/\*\*\* EDITOR DOMAIN \*\*\*/${editorDomain}/" /home/home/top/app/routes.php
+
+
+##############
+# Codiad関係 #
+##############
+
+
+# Codiadホームにgidをセットし、新規ディレクトリー／ファイルのグループが変わらないようにする
+chown codiad:codiad /home/codiad
+chmod g+s /home/codiad
+
+
+# Codiadインストール
+# wget https://github.com/Codiad/Codiad/archive/v.2.2.8.zip
+wget https://github.com/Codiad/Codiad/archive/master.zip
+mkdir temp
+unzip master.zip -d temp
+cp -R temp/Codiad-master/* /home/codiad
+rm master.zip
+rm -R temp
+
+
+# Codiad日本語化ファイルのインストール
+git clone https://gist.github.com/b55af329ac844c985bf3.git temp
+mv temp/ja.php /home/codiad/languages
+rm -R temp
+sed -i -e 's/"english",/"english",\n    "ja" => "日本語",/' /home/codiad/languages/code.php
+
+
+# Codiad初期設定
+#echo "<?php/*|[\"\",{\"username\":\"base\",\"path\":\"base\",\"focused\":true}]|*/?>" > /home/codiad/data/active.php
+echo "<?php/*|[\"\"]|*/?>" > /home/codiad/data/active.php
+echo "<?php/*|[{\"name\":\"\u30a4\u30f3\u30b9\u30bf\u30f3\u30c8Laravel base\",\"path\":\"base\"}]|*/?>" > /home/codiad/data/projects.php
+echo "<?php echo sha1(md5(\"${basePassword}\"));" > temp.php
+hashedPassword=`php -f temp.php`
+rm temp.php
+echo "<?php/*|[{\"username\":\"base\",\"password\":\"${hashedPassword}\",\"project\":\"base\"}]|*/?>" > /home/codiad/data/users.php
+sed -e "s+/path/to/codiad+/home/codiad+" \
+       -e "s+domain\.tld+${editorDomain}+" \
+       -e "s+America/Chicago+${timezone}+" /home/codiad/config.example.php > /home/codiad/config.php
+chown -R codiad:codiad /home/codiad
+chown home:codiad /home/codiad/data
+chown home:codiad /home/codiad/data/*.php
+chmod 775 /home/codiad/data
+chmod 775 /home/codiad/workspace
+chmod 664 /home/codiad/data/*.php
+
+
+######################
+# チュートリアル対象FW #
+######################
+
+
+# 学習対象プロジェクトインストール
+# インストール先は、/home/codiad/workspace/base
+# 現在CodiadはUTF8のファイル保存時に正しく保存されないため英語オリジナル版をベースとして使用
+composer create-project laravel/laravel /home/codiad/workspace/base
+
+
+# 日本語言語ファイルのみ日本語翻訳版からコピー
+wget https://github.com/laravel-ja/laravel/archive/master.zip
+unzip master.zip
+mv laravel-master/app/lang/ja /home/codiad/workspace/base/app/lang/ja
+rm -R laravel-master
+rm master.zip
+
+
+# Bootstrapをpublicへセット
+wget https://github.com/twbs/bootstrap/releases/download/v3.2.0/bootstrap-3.2.0-dist.zip
+unzip bootstrap-3.2.0-dist.zip -d bootstrap
+mv bootstrap/bootstrap-3.2.0-dist/* /home/codiad/workspace/base/public
+rm -R bootstrap*
+
+
+# インストール終了後、オーナーを変更
+chown -R base:codiad /home/codiad/workspace/base
+
+
+# codiadグループから書き込めるようにする
+find /home/codiad/workspace/base -type d -exec sudo chmod 2775 {} +
+find /home/codiad/workspace/base -type f -exec sudo chmod 0664 {} +
+
+
+#############
+# 固定ページ #
+#############
+
+
+# プレビューindexページ
+sed -e "s/\*\*\* PREVIEW DOMAIN \*\*\*/${previewDomain}/" /home/home/top/preview-resources/index.html > /home/codiad/workspace/index.html
+
+
+# プレビュー404ページ
+mv /home/home/top/preview-resources/404.html /home/codiad/workspace/
+
+
 # baseへレイアウトのサンプルを用意
 mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/views/
 
 
-# 仮想ホストを有効にする
-ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled
-ln -s /etc/nginx/sites-available/editor /etc/nginx/sites-enabled
-ln -s /etc/nginx/sites-available/preview /etc/nginx/sites-enabled
+########################
+# Nginx、php5-fpm再起動 #
+########################
 
 
-# Nginx、php5-fpm再起動
 service nginx restart
 service php5-fpm stop
 service php5-fpm start
 
 
-# Nginx、php5-fpm再起動要求監視シェル起動
+
+########################################
+# Nginx、php5-fpm再起動要求監視シェル起動 #
+########################################
+
+
 chown root:root /home/home/top/restart-watchdoc.sh
 chmod 744 /home/home/top/restart-watchdoc.sh
 /home/home/top/restart-watchdoc.sh &
