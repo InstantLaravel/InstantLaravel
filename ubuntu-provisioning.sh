@@ -210,12 +210,12 @@ chmod g+s /home/codiad
 
 
 # Codiadインストール
-# (masterは不安定=>)git clone https://github.com/Codiad/Codiad.git /home/codiad
-wget https://github.com/Codiad/Codiad/archive/v.2.2.8.zip
+# wget https://github.com/Codiad/Codiad/archive/v.2.2.8.zip
+wget https://github.com/Codiad/Codiad/archive/master.zip
 mkdir temp
-unzip v.2.2.8.zip -d temp
-cp -R temp/Codiad-v.2.2.8/* /home/codiad
-rm v.2.2.8*
+unzip master.zip -d temp
+cp -R temp/Codiad-master/* /home/codiad
+rm master.zip
 rm -R temp
 
 
@@ -377,7 +377,7 @@ server {
 EOT
 
 # プレビューindexページ
-sed -e "s/\*\*\* EDITOR DOMAIN \*\*\*/${editorDomain}/" /home/home/top/preview-resources/index.html > /home/codiad/workspace/index.html
+sed -e "s/\*\*\* PREVIEW DOMAIN \*\*\*/${previewDomain}/" /home/home/top/preview-resources/index.html > /home/codiad/workspace/index.html
 
 
 # プレビュー404ページ
@@ -409,7 +409,6 @@ EOT
 
 # baseへレイアウトのサンプルを用意
 mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/views/
-
 
 
 # 仮想ホストを有効にする
