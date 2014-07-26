@@ -269,6 +269,11 @@ server {
         try_files \$uri /index.html;
     }
 
+    location ^~ /(css|js|img|fonts)/ {
+        access_log off;
+        try_files \$uri \404.html;
+    }
+
     # このドメインのトップレベルではPHPを実行させない
     # そのため、fastcgiへのブリッジ処理は記述しない
 
@@ -449,6 +454,17 @@ mv /home/home/top/preview-resources/404.html /home/codiad/workspace/
 
 # baseへレイアウトのサンプルを用意
 mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/views/
+
+
+#################################################
+# レビューのルートURLアクセス時のindex.htm用リソース #
+#################################################
+
+
+cp -R /home/home/top/public/css /home/codiad/workspace/
+cp -R /home/home/top/public/js /home/codiad/workspace/
+cp -R /home/home/top/public/fonts /home/codiad/workspace/
+cp -R /home/home/top/public/img /home/codiad/workspace/
 
 
 ########################
