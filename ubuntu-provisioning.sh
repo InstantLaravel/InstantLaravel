@@ -134,7 +134,7 @@ sed -i -e "s/user www-data;/user www-data;/" \
 # PHP-FPM設定
 
 # ホーム（新規登録）
-# 一時にアクセスが集まり、その他の時間はほどほどの予想
+# 一時にアクセスが集まり、その他の時間はほぼアクセスが起きない予想
 cat <<EOT > /etc/php5/fpm/pool.d/home.conf
 [home]
 user = home
@@ -247,7 +247,7 @@ server {
     # 直接codiaユーザーでアクセスさせると、workspace下の
     # ファイルは全部変更できるため、拒否する。
     location ~ ^/workspace {
-        return 403;
+        return 404;
     }
 
     error_log /var/log/nginx/error.log error;
