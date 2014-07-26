@@ -126,6 +126,7 @@ sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
 
 # Nginxオプション設定
 sed -i -e "s/user www-data;/user www-data;/" \
+    -e "s/keepalive_timeout .*/keepalive_timeout 30/" \
     -e "s/^worker_processes .*/worker_processes auto;/" \
     -e "s/# server_names_hash_bucket_size .*/server_names_hash_bucket_size 64;/" /etc/nginx/nginx.conf
 
@@ -162,7 +163,7 @@ listen.group = www-data
 listen.mode = 0660
 pm = dynamic
 pm.max_children = 8
-pm.start_servers = 2
+pm.start_servers = 3
 pm.min_spare_servers = 3
 pm.max_spare_servers = 5
 chdir = /
