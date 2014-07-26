@@ -126,7 +126,7 @@ sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
 
 # Nginxオプション設定
 sed -i -e "s/user www-data;/user www-data;/" \
-    -e "s/keepalive_timeout .*/keepalive_timeout 30/;" \
+    -e "s/keepalive_timeout .*/keepalive_timeout 30;/" \
     -e "s/^worker_processes .*/worker_processes auto;/" \
     -e "s/# server_names_hash_bucket_size .*/server_names_hash_bucket_size 64;/" /etc/nginx/nginx.conf
 
@@ -452,7 +452,7 @@ mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/
 
 
 #################################################
-# レビューのルートURLアクセス時のindex.htm用リソース #
+# プレビューのルートURLアクセス時のindex.htm用リソース #
 #################################################
 
 
