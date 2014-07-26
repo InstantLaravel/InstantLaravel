@@ -126,7 +126,7 @@ sed -i -e "s/error_reporting = .*/error_reporting = E_ALL/" \
 
 # Nginxオプション設定
 sed -i -e "s/user www-data;/user www-data;/" \
-    -e "s/keepalive_timeout .*/keepalive_timeout 30/" \
+    -e "s/keepalive_timeout .*/keepalive_timeout 30/;" \
     -e "s/^worker_processes .*/worker_processes auto;/" \
     -e "s/# server_names_hash_bucket_size .*/server_names_hash_bucket_size 64;/" /etc/nginx/nginx.conf
 
@@ -267,11 +267,6 @@ server {
 
     location / {
         try_files \$uri /index.html;
-    }
-
-    location ^~ /(css|js|img|fonts)/ {
-        access_log off;
-        try_files \$uri \404.html;
     }
 
     # このドメインのトップレベルではPHPを実行させない
@@ -462,9 +457,13 @@ mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/
 
 
 cp -R /home/home/top/public/css /home/codiad/workspace/
+chown -R www-data:codiad /home/codiad/workspace/css
 cp -R /home/home/top/public/js /home/codiad/workspace/
+chown -R www-data:codiad /home/codiad/workspace/js
 cp -R /home/home/top/public/fonts /home/codiad/workspace/
+chown -R www-data:codiad /home/codiad/workspace/fonts
 cp -R /home/home/top/public/img /home/codiad/workspace/
+chown -R www-data:codiad /home/codiad/workspace/img
 
 
 ########################
