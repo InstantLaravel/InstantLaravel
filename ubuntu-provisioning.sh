@@ -131,6 +131,9 @@ sed -i -e "s/user www-data;/user www-data;/" \
 
 
 # PHP-FPM設定
+
+# ホーム（新規登録）
+# 一時にアクセスが集まり、その他の時間はほどほどの予想
 cat <<EOT > /etc/php5/fpm/pool.d/home.conf
 [home]
 user = home
@@ -139,13 +142,16 @@ listen = /var/run/php5-fpm.home.sock
 listen.owner = home
 listen.group = www-data
 listen.mode = 0660
-pm = dynamic
-pm.max_children = 5
+pm = ondemand
+pm.max_children = 10
 pm.start_servers = 2
-pm.min_spare_servers = 1
-pm.max_spare_servers = 3
+pm.min_spare_servers = 2
+pm.max_spare_servers = 6
 chdir = /
 EOT
+
+# エディター(Codiad)
+# 小さな量のアクセスが、チュートリアル中持続する
 cat <<EOT > /etc/php5/fpm/pool.d/codiad.conf
 [codiad]
 user = codiad
@@ -155,12 +161,15 @@ listen.owner = codiad
 listen.group = www-data
 listen.mode = 0660
 pm = dynamic
-pm.max_children = 5
+pm.max_children = 8
 pm.start_servers = 2
-pm.min_spare_servers = 1
-pm.max_spare_servers = 3
+pm.min_spare_servers = 3
+pm.max_spare_servers = 5
 chdir = /
 EOT
+
+# baseユーザー（管理ユーザー）
+# 専用プレビュー
 cat <<EOT > /etc/php5/fpm/pool.d/base.conf
 [base]
 user = base
@@ -169,14 +178,16 @@ listen = /var/run/php5-fpm.base.sock
 listen.owner = base
 listen.group = www-data
 listen.mode = 0660
-pm = dynamic
-pm.max_children = 5
+pm = ondemand
+pm.max_children = 2
 pm.start_servers = 2
 pm.min_spare_servers = 1
-pm.max_spare_servers = 3
+pm.max_spare_servers = 2
 chdir = /
-php_admin_value[disable_functions] = dl,exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source
 EOT
+
+
+# Nginx 仮想ホスト設定
 
 
 # トップ（認証／ログイン）仮想ホスト設定
