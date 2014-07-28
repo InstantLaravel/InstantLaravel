@@ -4,32 +4,34 @@
 # シェルから流す場合は、ルートユーザーになること!!!!
 
 
+# yii2バージョン
+
 
 ######################## 設定項目 #############################
 
 
 
 # ルートページ（登録／ログインなど）ドメイン
-rootDomain='top.instant.com'
+rootDomain='yii1.instant.com'
 # ルートページドキュメントルート
 rootPageDocRoot='public'
 
 
 # エディター用(Codiad)ドメイン
-editorDomain="editor.instant.com"
+editorDomain="yii2.instant.com"
 
 
 # プレビュードメイン名
-previewDomain='check.instant.com'
+previewDomain='yii3.instant.com'
 # プレビュー用ドキュメントルート
-previewDocRoot='public'
+previewDocRoot='web'
 
 # タイムゾーン
 timezone='Asia/Tokyo'
 
 
 # Codiad "base" ユーザーパスワード
-basePassword='whitebase'
+basePassword='yiijan'
 
 
 
@@ -100,7 +102,8 @@ apt-get install -y sqlite3
 # PHP関係のインストール
 apt-get install -y php5-cli php5-dev \
     php5-json php5-curl php5-sqlite\
-    php5-imap php5-mcrypt
+    php5-imap php5-mcrypt php5-gd \
+    php5-intl php5-memcache
 php5enmod mcrypt pdo opcache json curl
 
 
@@ -298,14 +301,14 @@ mkdir /etc/nginx/users.d
 # baseユーザー用設定ファイル
 cat <<EOT > /etc/nginx/users.d/base
     location ~ ^/base(/(.+))?$ {
-        root /home/codiad/workspace/base/public;
+        root /home/codiad/workspace/base/${previewDocRoot};
 
         try_files \$1 /base/index.php?\$query_string;
 
         location ~ ^/base/index.php$ {
             include fastcgi_params;
             # パラメーターをオーバーライト
-            fastcgi_param SCRIPT_FILENAME /home/codiad/workspace/base/public/index.php;
+            fastcgi_param SCRIPT_FILENAME /home/codiad/workspace/base/${previewDocRoot}/index.php;
             fastcgi_split_path_info ^(.+\\.php)(.+)$;
             fastcgi_pass unix:/var/run/php5-fpm.base.sock;
             fastcgi_index index.php;
@@ -349,8 +352,11 @@ echo 'Defaults:home !requiretty' >> /etc/sudoers.d/home
 
 
 # ルートロジック中のリダイレクト先設定
-
 sed -i -e "s/\*\*\* EDITOR DOMAIN \*\*\*/${editorDomain}/" /home/home/top/app/routes.php
+
+
+# 新規ユーザー生成シェル中のドキュメントフォルダー設定
+sed -i -e "s/\*\*\* PREVIEW DOC ROOT \*\*\*/${previewDocRoot}/" /home/home/top/add-new-user.sh
 
 
 ##############
@@ -407,22 +413,9 @@ chmod 664 /home/codiad/data/*.php
 # 学習対象プロジェクトインストール
 # インストール先は、/home/codiad/workspace/base
 # 現在CodiadはUTF8のファイル保存時に正しく保存されないため英語オリジナル版をベースとして使用
-composer create-project laravel/laravel /home/codiad/workspace/base
-
-
-# 日本語言語ファイルのみ日本語翻訳版からコピー
-wget https://github.com/laravel-ja/laravel/archive/master.zip
-unzip master.zip
-mv laravel-master/app/lang/ja /home/codiad/workspace/base/app/lang/ja
-rm -R laravel-master
-rm master.zip
-
-
-# Bootstrapをpublicへセット
-wget https://github.com/twbs/bootstrap/releases/download/v3.2.0/bootstrap-3.2.0-dist.zip
-unzip bootstrap-3.2.0-dist.zip -d bootstrap
-mv bootstrap/bootstrap-3.2.0-dist/* /home/codiad/workspace/base/public
-rm -R bootstrap*
+# composer create-project --prefer-dist --stability=dev yiisoft/yii2-app-basic /home/codiad/workspace/base
+# 注意！　現状、swiftmailerのインストール時に、Githubの認証が求められるため、--perfer-distを削除
+composer create-project --stability=dev yiisoft/yii2-app-basic /home/codiad/workspace/base
 
 
 # インストール終了後、オーナーを変更
@@ -448,7 +441,7 @@ mv /home/home/top/preview-resources/404.html /home/codiad/workspace/
 
 
 # baseへレイアウトのサンプルを用意
-mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/views/
+# mv /home/home/top/preview-resources/*.blade.php /home/codiad/workspace/base/app/views/
 
 
 #################################################
