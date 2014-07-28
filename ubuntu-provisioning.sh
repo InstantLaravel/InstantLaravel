@@ -298,14 +298,14 @@ mkdir /etc/nginx/users.d
 # baseユーザー用設定ファイル
 cat <<EOT > /etc/nginx/users.d/base
     location ~ ^/base(/(.+))?$ {
-        root /home/codiad/workspace/base/public;
+        root /home/codiad/workspace/base/${previewDocRoot};
 
         try_files \$1 /base/index.php?\$query_string;
 
         location ~ ^/base/index.php$ {
             include fastcgi_params;
             # パラメーターをオーバーライト
-            fastcgi_param SCRIPT_FILENAME /home/codiad/workspace/base/public/index.php;
+            fastcgi_param SCRIPT_FILENAME /home/codiad/workspace/base/${previewDocRoot}/index.php;
             fastcgi_split_path_info ^(.+\\.php)(.+)$;
             fastcgi_pass unix:/var/run/php5-fpm.base.sock;
             fastcgi_index index.php;
@@ -349,8 +349,11 @@ echo 'Defaults:home !requiretty' >> /etc/sudoers.d/home
 
 
 # ルートロジック中のリダイレクト先設定
-
 sed -i -e "s/\*\*\* EDITOR DOMAIN \*\*\*/${editorDomain}/" /home/home/top/app/routes.php
+
+
+# 新規ユーザー生成シェル中のドキュメントフォルダー設定
+sed -i -e "s/\*\*\* PREVIEW DOC ROOT \*\*\*/${previewDocRoot}/" /home/home/top/add-new-user.sh
 
 
 ##############
